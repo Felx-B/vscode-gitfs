@@ -22,6 +22,7 @@
     <link rel="prefetch" href="./node_modules/semver-umd/lib/semver-umd.js" />
     <!-- Built in extension -->
     <script src="./node_modules/vscode-web/dist/extensions.js"></script>
+    <script src="./gitfs/dist/webextension.js"></script>
 
   </head>
 
@@ -33,6 +34,7 @@
     );
     extElement.attributes["data-settings"].value = JSON.stringify([
       ...extensions,
+      gitfs
     ]);
 
     let baseUri = `${window.location.origin}`;
