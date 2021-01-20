@@ -1,14 +1,11 @@
 import * as vscode from "vscode";
-// import {} from 'isomorphic-git';
-// import FS from '@isomorphic-git/lightning-fs';
-import * as BrowserFS from "browserfs";
+import * as FS from "@isomorphic-git/lightning-fs";
 
 export class FileSystem
   implements vscode.FileSystemProvider, vscode.Disposable {
   private readonly disposable: vscode.Disposable;
-  //   private fs = new FS("testfs");
 
-  private fs = {};
+  private fs = new FS("testfs", {});
 
   constructor() {
     this.disposable = vscode.Disposable.from(
@@ -17,28 +14,11 @@ export class FileSystem
         isReadonly: false,
       })
     );
-
-    BrowserFS.install(this.fs);
-    BrowserFS.configure(
-      {
-        fs: "IndexedDB",
-        options: {}
-      },
-      function (e) {
-        if (e) {
-          // An error happened!
-          throw e;
-        }
-        // Otherwise, BrowserFS is ready-to-use!
-      }
-    );
   }
 
   dispose() {
     this.disposable?.dispose();
   }
-
-  // onDidChangeFile: vscode.Event<vscode.FileChangeEvent[]>;
   private _emitter = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
   readonly onDidChangeFile: vscode.Event<vscode.FileChangeEvent[]> = this
     ._emitter.event;
@@ -50,38 +30,66 @@ export class FileSystem
     // ignore, fires for all changes...
     return new vscode.Disposable(() => {});
   }
-  stat(uri: vscode.Uri): vscode.FileStat | Thenable<vscode.FileStat> {
-    throw new Error("Method not implemented.");
+  async stat(uri: vscode.Uri): Promise<vscode.FileStat> {
+    try {
+      const stats = await this.fs.promises.stat(uri.path);
+      const result: vscode.FileStat = {
+        type: stats.isDirectory() ? 2 : 1,
+        ctime: stats.ctimeMs,
+        mtime: stats.mtimeMs,
+        size: stats.size,
+      };
+
+      return result;
+    } catch (e) {
+      throw vscode.FileSystemError.FileNotFound(uri);
+    }
   }
-  readDirectory(
-    uri: vscode.Uri
-  ): [string, vscode.FileType][] | Thenable<[string, vscode.FileType][]> {
-    throw new Error("Method not implemented.");
+
+  async readDirectory(uri: vscode.Uri): Promise<[string, vscode.FileType][]> {
+    const content = await this.fs.promises.readdir(uri.path);
+    const result: [string, vscode.FileType][] = [];
+
+    for (let item of content) {
+      const type = (
+        await this.fs.promises.stat(`${uri.path}/${item}`)
+      ).isDirectory()
+        ? 2
+        : 1;
+      result.push([item, type]);
+    }
+
+    return result;
   }
-  createDirectory(uri: vscode.Uri): void | Thenable<void> {
-    throw new Error("Method not implemented.");
+  async createDirectory(uri: vscode.Uri): Promise<void> {
+    await this.fs.promises.mkdir(uri.path);
   }
-  readFile(uri: vscode.Uri): Uint8Array | Thenable<Uint8Array> {
-    throw new Error("Method not implemented.");
+  async readFile(uri: vscode.Uri): Promise<Uint8Array> {
+    return (await this.fs.promises.readFile(uri.path)) as Uint8Array;
   }
-  writeFile(
+  async writeFile(
     uri: vscode.Uri,
     content: Uint8Array,
     options: { create: boolean; overwrite: boolean }
-  ): void | Thenable<void> {
-    throw new Error("Method not implemented.");
+  ): Promise<void> {
+    await this.fs.promises.writeFile(uri.path, content);
   }
-  delete(
+  async delete(
     uri: vscode.Uri,
     options: { recursive: boolean }
-  ): void | Thenable<void> {
-    throw new Error("Method not implemented.");
+  ): Promise<void> {
+    const stat = await this.stat(uri);
+    if (stat.type === vscode.FileType.Directory) {
+      await this.fs.promises.rmdir(uri.path);
+    } else {
+      await this.fs.promises.unlink(uri.path);
+    }
   }
-  rename(
+  async rename(
     oldUri: vscode.Uri,
     newUri: vscode.Uri,
     options: { overwrite: boolean }
-  ): void | Thenable<void> {
-    throw new Error("Method not implemented.");
+  ): Promise<void> {
+    await this.fs.promises.rename(oldUri.path, newUri.path);
   }
 }

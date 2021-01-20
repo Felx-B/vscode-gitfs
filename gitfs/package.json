@@ -16,7 +16,6 @@
 	],
 	"main": "./dist/extension.js",
 	"browser": "./dist/extension.js",
-	"contributes": {},
 	"scripts": {
 		"vscode:prepublish": "yarn run package",
 		"compile": "webpack --config ./build/node-extension.webpack.config.js",
