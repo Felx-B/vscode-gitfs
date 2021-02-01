@@ -1,11 +1,11 @@
 import * as vscode from "vscode";
 import * as FS from "@isomorphic-git/lightning-fs";
 
-export class FileSystem
+export class IndexedDBFileSystem
   implements vscode.FileSystemProvider, vscode.Disposable {
   private readonly disposable: vscode.Disposable;
 
-  private fs = new FS("testfs", {});
+  public fs = new FS("testfs", {});
 
   constructor() {
     this.disposable = vscode.Disposable.from(

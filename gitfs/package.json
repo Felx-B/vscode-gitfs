@@ -46,7 +46,7 @@
 	},
 	"dependencies": {
 		"@isomorphic-git/lightning-fs": "^4.4.1",
-		"browserfs": "^1.4.3",
-		"isomorphic-git": "^1.8.0"
+		"buffer": "^6.0.3",
+		"isomorphic-git": "beta"
 	}
 }
